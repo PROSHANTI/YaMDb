@@ -7,7 +7,7 @@ from api.v1 import permissions
 from api.v1 import serializers
 from api.v1.filters import TitleFilter
 from api.v1.mixins import GenreCategoryMixin
-from yamdb.models import Title, Genre, Category
+from reviews.models import Title, Genre, Category
 
 
 class TitleViewSet(viewsets.ModelViewSet):
