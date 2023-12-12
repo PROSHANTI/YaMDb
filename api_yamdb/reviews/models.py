@@ -1,4 +1,11 @@
+from django.utils import timezone
+
 from django.db import models
+from django.core.validators import MaxValueValidator
+
+
+def get_current_year():
+    return timezone.now().year
 
 
 class DefaultModel(models.Model):
@@ -48,6 +55,7 @@ class Title(models.Model):
     year = models.PositiveSmallIntegerField(
         verbose_name="Год создания",
         db_index=True,
+        validators=[MaxValueValidator(get_current_year)],
     )
     description = models.TextField(
         verbose_name="Описание",
