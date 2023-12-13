@@ -35,4 +35,3 @@ class CategoriesViewSet(GenreCategoryMixin):
     queryset = Category.objects.all()
     serializer_class = serializers.CategorySerializer
     filter_backends = (SearchFilter,)
-

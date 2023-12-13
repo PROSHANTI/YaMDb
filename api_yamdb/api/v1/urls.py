@@ -4,12 +4,12 @@ from rest_framework.routers import DefaultRouter
 from api.v1 import views
 
 
-router = DefaultRouter()
+v1_router = DefaultRouter()
 
-router.register("titles", views.TitleViewSet, basename="titles")
-router.register("genres", views.GenreViewSet)
-router.register("categories", views.CategoriesViewSet)
+v1_router.register("titles", views.TitleViewSet, basename="titles")
+v1_router.register("genres", views.GenreViewSet)
+v1_router.register("categories", views.CategoriesViewSet)
 
 urlpatterns = [
-    path("", include(router.urls)),
+    path("", include(v1_router.urls)),
 ]
