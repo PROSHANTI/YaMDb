@@ -5,8 +5,10 @@ from django.utils import timezone
 
 
 from django.db import models
-from django.core.validators import MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db.models.signals import post_save
+from django.db.models import UniqueConstraint, Q
+
 
 from .validators import validate_username
 
@@ -167,6 +169,11 @@ class Title(models.Model):
         null=True,
         related_name="titles",
     )
+    rating = models.FloatField(
+        'Рейтинг',
+        blank=True,
+        null=True
+    )
 
     class Meta:
         ordering = ("name",)
@@ -183,3 +190,37 @@ class GenreTitle(models.Model):
 
     def __str__(self):
         return f"{self.genre} {self.title}"
+    
+
+class Review(models.Model):
+    text = models.CharField(max_length=128)
+    author = models.ForeignKey(User, on_delete=models.CASCADE,
+                               related_name='reviews')
+    score = models.IntegerField(validators=[
+        MaxValueValidator(10),
+        MinValueValidator(1)
+    ]
+    )
+    pub_date = models.DateField(auto_now_add=True)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE,
+                              related_name='reviews')
+
+    def __str__(self):
+        return self.text
+    
+    class Meta:
+        constraints = (
+            UniqueConstraint(
+                fields=['author_id', 'title_id'],
+                name='unique_review'
+            ),
+        )
+    
+
+class Comment(models.Model):
+    text = models.CharField(max_length=128)
+    author = models.ForeignKey(User, on_delete=models.CASCADE,
+                               related_name='comments')
+    pub_date = models.DateField(auto_now_add=True)
+    review = models.ForeignKey(Review, on_delete=models.CASCADE,
+                               related_name='comments')

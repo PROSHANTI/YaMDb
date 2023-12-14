@@ -1,9 +1,12 @@
 from django.core.mail import EmailMessage
+from django.db.models import Avg
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ParseError
 from rest_framework.filters import SearchFilter
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -13,8 +16,8 @@ from api.v1 import serializers
 from api.v1.filters import TitleFilter
 from api.v1.mixins import GenreCategoryMixin
 from api.v1.permissions import IsAdmin
-from api.v1.serializers import GetTokenSerializer, NotAdminSerializer, SignUpSerializer, UsersSerializer
-from reviews.models import Title, Genre, Category, User
+from api.v1.serializers import GetTokenSerializer, NotAdminSerializer, SignUpSerializer, UsersSerializer, ReviewSerializer
+from reviews.models import Title, Genre, Category, User, Review
 
 
 class UsersViewSet(viewsets.ModelViewSet):
@@ -149,3 +152,55 @@ class CategoriesViewSet(GenreCategoryMixin):
     queryset = Category.objects.all()
     serializer_class = serializers.CategorySerializer
     filter_backends = (SearchFilter,)
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = (permissions.AuthorModerAdmin,)
+
+    def object_title(self):
+        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+    
+    def get_queryset(self):
+        return self.object_title().reviews.all()
+
+    def perform_create(self, serializer):
+        if Review.objects.filter(author=self.request.user,
+                                 title=self.object_title()):
+            raise ParseError('Разрешен один отзыв')
+        
+        sum_score = 0
+        query = Review.objects.filter(
+            title=self.object_title().pk
+        )
+        
+        for i in query:
+            sum_score += i.score
+        
+        try:
+            avg_score = sum_score / len(query)
+            Title.objects.filter(
+                pk=self.object_title().pk
+            ).update(rating=avg_score)
+        except ZeroDivisionError:
+            avg_score = sum_score
+        
+        serializer.save(
+            author=self.request.user,
+            title=self.object_title()
+        )
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = serializers.CommentSerializer
+    permission_classes = (permissions.AuthorModerAdmin,)
+
+    def object_review(self):
+        return get_object_or_404(Review, pk=self.kwargs.get('review_id'))
+
+    def get_queryset(self):
+        return self.object_review().comments.all()
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user,
+                        review=self.object_review())

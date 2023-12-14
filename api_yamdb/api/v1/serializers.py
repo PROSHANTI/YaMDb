@@ -1,8 +1,16 @@
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.serializers import ModelSerializer
+from rest_framework.validators import UniqueTogetherValidator
 
-from reviews.models import Category, Genre, Title, User
+from reviews.models import (
+    Category,
+    Genre,
+    Title,
+    User,
+    Comment,
+    Review
+)
 
 
 class UsersSerializer(serializers.ModelSerializer):
@@ -87,3 +95,25 @@ class SignUpSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('email', 'username')
+
+
+class CommentSerializer(ModelSerializer):
+    author = SlugRelatedField(
+        slug_field='username',
+        read_only=True
+    )
+
+    class Meta:
+        model = Comment
+        exclude = ('review',)
+
+
+class ReviewSerializer(ModelSerializer):
+    author = SlugRelatedField(
+        slug_field='username',
+        read_only=True
+    )
+
+    class Meta:
+        model = Review
+        exclude = ('title',)

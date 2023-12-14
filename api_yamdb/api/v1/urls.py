@@ -10,6 +10,16 @@ app_name = 'api'
 v1_router = SimpleRouter()
 
 v1_router.register(
+    r'^titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)/comments',
+    views.CommentViewSet,
+    basename="comments"
+)
+v1_router.register(
+    r'^titles/(?P<title_id>\d+)/reviews',
+    views.ReviewViewSet,
+    basename="reviews"
+)
+v1_router.register(
     "titles",
     views.TitleViewSet,
     basename="titles"
@@ -29,6 +39,7 @@ v1_router.register(
     UsersViewSet,
     basename='users'
 )
+
 
 urlpatterns = [
     path('', include(v1_router.urls)),
