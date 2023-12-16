@@ -15,7 +15,7 @@ from api.v1 import permissions
 from api.v1 import serializers
 from api.v1.filters import TitleFilter
 from api.v1.mixins import GenreCategoryMixin
-from api.v1.permissions import IsAdmin
+from api.v1.permissions import AdminOnly, IsAdmin
 from api.v1.serializers import (GetTokenSerializer,
                                 NotAdminSerializer,
                                 ReviewSerializer,
@@ -29,10 +29,11 @@ from reviews.models import Category, Genre, Review, Title, User
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UsersSerializer
-    permission_classes = (IsAuthenticated, IsAdmin,)
+    permission_classes = (IsAuthenticated, AdminOnly,)
     lookup_field = 'username'
     filter_backends = (SearchFilter, )
     search_fields = ('username', )
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
 
     @action(
         methods=['GET', 'PATCH'],
@@ -54,11 +55,11 @@ class UsersViewSet(viewsets.ModelViewSet):
                     partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
 
 
 class APIGetToken(APIView):
-
     """
     Получение JWT-токена в обмен на username и confirmation code.
     Права доступа: Доступно без токена. Пример тела запроса:
@@ -89,7 +90,6 @@ class APIGetToken(APIView):
 
 
 class APISignup(APIView):
-
     """
     Получить код подтверждения на переданный email. Права доступа: Доступно без
     токена. Использовать имя 'me' в качестве username запрещено. Поля email и
@@ -99,7 +99,6 @@ class APISignup(APIView):
         "username": "string"
     }
     """
-
     permission_classes = (AllowAny,)
 
     @staticmethod
@@ -157,7 +156,6 @@ class APISignup(APIView):
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Получить список всех объектов. Права доступа: Доступно без токена."""
-
     queryset = Title.objects.all()
     permission_classes = (permissions.IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
@@ -172,7 +170,6 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class GenreViewSet(GenreCategoryMixin):
     """Получить список всех жанров. Права доступа: Доступно без токена."""
-
     queryset = Genre.objects.all()
     serializer_class = serializers.GenreSerializer
     filter_backends = (SearchFilter,)
@@ -180,7 +177,6 @@ class GenreViewSet(GenreCategoryMixin):
 
 class CategoriesViewSet(GenreCategoryMixin):
     """Получить список всех категорий. Права доступа: Доступно без токена."""
-
     queryset = Category.objects.all()
     serializer_class = serializers.CategorySerializer
     filter_backends = (SearchFilter,)
@@ -188,7 +184,6 @@ class CategoriesViewSet(GenreCategoryMixin):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     """Получить список всех отзывов. Права доступа: Доступно без токена."""
-
     serializer_class = ReviewSerializer
     permission_classes = (permissions.AuthorModerAdmin,)
 
@@ -227,7 +222,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     """Получить комментарий. Права доступа: Доступно без токена."""
-
     serializer_class = serializers.CommentSerializer
     permission_classes = (permissions.AuthorModerAdmin,)
 

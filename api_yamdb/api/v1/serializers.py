@@ -24,28 +24,24 @@ class NotAdminSerializer(serializers.ModelSerializer):
 
 
 class GenreSerializer(ModelSerializer):
-
     class Meta:
         model = Genre
         exclude = ("id",)
 
 
 class CategorySerializer(ModelSerializer):
-
     class Meta:
         model = Category
         exclude = ("id",)
 
 
 class TitleSerializer(ModelSerializer):
-
     class Meta:
         model = Title
         fields = "__all__"
 
 
 class TitleGetSerializer(TitleSerializer):
-
     category = CategorySerializer()
     genre = GenreSerializer(many=True)
 
@@ -57,7 +53,6 @@ class TitleGetSerializer(TitleSerializer):
 
 
 class TitleWriteSerializer(TitleSerializer):
-
     category = SlugRelatedField(
         queryset=Category.objects.all(),
         slug_field="slug",
@@ -84,7 +79,6 @@ class GetTokenSerializer(serializers.ModelSerializer):
 
 
 class SignUpSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = ('email', 'username')
