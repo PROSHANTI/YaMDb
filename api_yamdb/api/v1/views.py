@@ -15,7 +15,7 @@ from api.v1 import permissions
 from api.v1 import serializers
 from api.v1.filters import TitleFilter
 from api.v1.mixins import GenreCategoryMixin
-from api.v1.permissions import AdminOnly, IsAdmin
+from api.v1.permissions import AdminOnly
 from api.v1.serializers import (GetTokenSerializer,
                                 NotAdminSerializer,
                                 ReviewSerializer,
@@ -119,7 +119,7 @@ class APISignup(APIView):
             if user.email != request.data.get("email"):
                 return Response(
                     {
-                        "detail":"Пользователь с такой почтой уже существует."
+                        "detail": "Пользователь с такой почтой уже существует."
                     },
                     status=status.HTTP_400_BAD_REQUEST)
 
