@@ -1,4 +1,5 @@
 from django.core.mail import EmailMessage
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
@@ -156,7 +157,7 @@ class APISignup(APIView):
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Получить список всех объектов. Права доступа: Доступно без токена."""
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().annotate(rating=Avg('reviews__score'))
     permission_classes = (permissions.IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
@@ -187,36 +188,16 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (permissions.AuthorModerAdmin,)
 
-    def object_title(self):
+    def get_object_title(self):
         return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
 
     def get_queryset(self):
-        return self.object_title().reviews.all()
+        return self.get_object_title().reviews.all()
 
     def perform_create(self, serializer):
-        if Review.objects.filter(author=self.request.user,
-                                 title=self.object_title()):
-            raise ParseError('Разрешен один отзыв')
-
-        sum_score = 0
-        query = Review.objects.filter(
-            title=self.object_title().pk
-        )
-
-        for i in query:
-            sum_score += i.score
-
-        try:
-            avg_score = sum_score / len(query)
-            Title.objects.filter(
-                pk=self.object_title().pk
-            ).update(rating=avg_score)
-        except ZeroDivisionError:
-            avg_score = sum_score
-
         serializer.save(
             author=self.request.user,
-            title=self.object_title()
+            title=self.get_object_title()
         )
 
 
@@ -225,12 +206,16 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CommentSerializer
     permission_classes = (permissions.AuthorModerAdmin,)
 
-    def object_review(self):
-        return get_object_or_404(Review, pk=self.kwargs.get('review_id'))
+    def get_object_review(self):
+        return get_object_or_404(
+            Review,
+            pk=self.kwargs.get('review_id'),
+            title=self.kwargs.get('title_id')
+        )
 
     def get_queryset(self):
-        return self.object_review().comments.all()
+        return self.get_object_review().comments.all()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user,
-                        review=self.object_review())
+                        review=self.get_object_review())

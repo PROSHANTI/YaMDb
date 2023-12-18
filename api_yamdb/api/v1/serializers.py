@@ -1,3 +1,4 @@
+from django.db.utils import IntegrityError
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.serializers import ModelSerializer
@@ -42,6 +43,7 @@ class TitleSerializer(ModelSerializer):
 
 
 class TitleGetSerializer(TitleSerializer):
+    rating = serializers.SerializerMethodField()
     category = CategorySerializer()
     genre = GenreSerializer(many=True)
 
@@ -50,6 +52,9 @@ class TitleGetSerializer(TitleSerializer):
         for field in fields.values():
             field.read_only = True
         return fields
+    
+    def get_rating(self, obj):
+        return obj.rating
 
 
 class TitleWriteSerializer(TitleSerializer):
@@ -104,3 +109,9 @@ class ReviewSerializer(ModelSerializer):
     class Meta:
         model = Review
         exclude = ('title',)
+
+    def create(self, validated_data):
+        try:
+            return super().create(validated_data)
+        except IntegrityError:
+            raise serializers.ValidationError('Разрешен один отзыв')

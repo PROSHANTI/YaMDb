@@ -164,13 +164,9 @@ class Title(models.Model):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name="titles",
+        related_name="titles"
     )
-    rating = models.FloatField(
-        'Рейтинг',
-        blank=True,
-        null=True
-    )
+
 
     class Meta:
         ordering = ("name",)
@@ -193,10 +189,11 @@ class Review(models.Model):
     text = models.CharField(max_length=128)
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                related_name='reviews')
-    score = models.IntegerField(validators=[
-        MaxValueValidator(10),
-        MinValueValidator(1)
-    ]
+    score = models.PositiveSmallIntegerField(
+        validators=[
+            MaxValueValidator(10),
+            MinValueValidator(1)
+        ]
     )
     pub_date = models.DateField(auto_now_add=True)
     title = models.ForeignKey(Title, on_delete=models.CASCADE,
