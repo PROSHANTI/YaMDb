@@ -52,7 +52,7 @@ class TitleGetSerializer(TitleSerializer):
         for field in fields.values():
             field.read_only = True
         return fields
-    
+
     def get_rating(self, obj):
         return obj.rating
 
