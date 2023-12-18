@@ -6,7 +6,7 @@ from rest_framework.serializers import ModelSerializer
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 
-class UsersSerializer(serializers.ModelSerializer):
+class UsersSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = (
@@ -14,7 +14,7 @@ class UsersSerializer(serializers.ModelSerializer):
             'last_name', 'bio', 'role')
 
 
-class NotAdminSerializer(serializers.ModelSerializer):
+class NotAdminSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = (
@@ -42,6 +42,7 @@ class TitleSerializer(ModelSerializer):
 
 
 class TitleGetSerializer(TitleSerializer):
+    rating = serializers.IntegerField()
     category = CategorySerializer()
     genre = GenreSerializer(many=True)
 
@@ -50,6 +51,9 @@ class TitleGetSerializer(TitleSerializer):
         for field in fields.values():
             field.read_only = True
         return fields
+
+    def get_rating(obj):
+        return obj.rating
 
 
 class TitleWriteSerializer(TitleSerializer):
@@ -63,8 +67,11 @@ class TitleWriteSerializer(TitleSerializer):
         many=True,
     )
 
+    def to_representation(self, instance):
+        return super().to_representation(instance)
 
-class GetTokenSerializer(serializers.ModelSerializer):
+
+class GetTokenSerializer(ModelSerializer):
     username = serializers.CharField(
         required=True)
     confirmation_code = serializers.CharField(
@@ -78,7 +85,7 @@ class GetTokenSerializer(serializers.ModelSerializer):
         )
 
 
-class SignUpSerializer(serializers.ModelSerializer):
+class SignUpSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ('email', 'username')
@@ -103,4 +110,15 @@ class ReviewSerializer(ModelSerializer):
 
     class Meta:
         model = Review
-        exclude = ('title',)
+        exclude = ('title', )
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        author = request.user
+        title = validated_data.get('title')
+        if Review.objects.filter(author=author, title=title).exists():
+            raise serializers.ValidationError(
+                'Разрешен один отзыв от пользователя'
+            )
+        validated_data['author'] = author
+        return super().create(validated_data)

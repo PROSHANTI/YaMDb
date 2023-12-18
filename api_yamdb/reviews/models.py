@@ -115,6 +115,7 @@ class DefaultModel(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -122,7 +123,7 @@ class DefaultModel(models.Model):
 
 class Genre(DefaultModel):
 
-    class Meta:
+    class Meta(DefaultModel.Meta):
         verbose_name = "Жанр"
         verbose_name_plural = "Жанры"
         default_related_name = "genres"
@@ -130,7 +131,7 @@ class Genre(DefaultModel):
 
 class Category(DefaultModel):
 
-    class Meta:
+    class Meta(DefaultModel.Meta):
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
         default_related_name = "categories"
@@ -164,12 +165,7 @@ class Title(models.Model):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name="titles",
-    )
-    rating = models.FloatField(
-        'Рейтинг',
-        blank=True,
-        null=True
+        related_name="titles"
     )
 
     class Meta:
@@ -193,10 +189,11 @@ class Review(models.Model):
     text = models.CharField(max_length=128)
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                related_name='reviews')
-    score = models.IntegerField(validators=[
-        MaxValueValidator(10),
-        MinValueValidator(1)
-    ]
+    score = models.PositiveSmallIntegerField(
+        validators=[
+            MaxValueValidator(10),
+            MinValueValidator(1)
+        ]
     )
     pub_date = models.DateField(auto_now_add=True)
     title = models.ForeignKey(Title, on_delete=models.CASCADE,
