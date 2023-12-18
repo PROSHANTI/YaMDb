@@ -167,7 +167,6 @@ class Title(models.Model):
         related_name="titles"
     )
 
-
     class Meta:
         ordering = ("name",)
         verbose_name = "Произведение"

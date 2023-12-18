@@ -2,9 +2,8 @@ from django.core.mail import EmailMessage
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ParseError
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
@@ -27,14 +26,45 @@ from api.v1.serializers import (GetTokenSerializer,
 from reviews.models import Category, Genre, Review, Title, User
 
 
-class UsersViewSet(viewsets.ModelViewSet):
+EMAIL_BODY_TEMPLATE = (
+    'Доброе время суток, {username}.\n'
+    'Код подтверждения для доступа к API: {confirmation_code}'
+)
+
+
+class UsersViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+):
     queryset = User.objects.all()
     serializer_class = UsersSerializer
     permission_classes = (IsAuthenticated, AdminOnly,)
     lookup_field = 'username'
     filter_backends = (SearchFilter, )
     search_fields = ('username', )
-    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
+
+    def get_serializer_class(self):
+        if self.action == 'partial_update':
+            return NotAdminSerializer
+        return UsersSerializer
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user.is_admin:
+            serializer = UsersSerializer(
+                instance,
+                data=request.data,
+                partial=True
+            )
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
         methods=['GET', 'PATCH'],
@@ -61,8 +91,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
 
 class APIGetToken(APIView):
-    """
-    Получение JWT-токена в обмен на username и confirmation code.
+    """Получение JWT-токена в обмен на username и confirmation code.
     Права доступа: Доступно без токена. Пример тела запроса:
     {
         "username": "string",
@@ -91,15 +120,16 @@ class APIGetToken(APIView):
 
 
 class APISignup(APIView):
-    """
-    Получить код подтверждения на переданный email. Права доступа: Доступно без
-    токена. Использовать имя 'me' в качестве username запрещено. Поля email и
-    username должны быть уникальными. Пример тела запроса:
+    """Получить код подтверждения на переданный email.
+    Права доступа: Доступно без токена.
+    Использовать имя 'me' в качестве username запрещено.
+    Поля email и username должны быть уникальными. Пример тела запроса:
     {
         "email": "string",
         "username": "string"
     }
     """
+
     permission_classes = (AllowAny,)
 
     @staticmethod
@@ -113,7 +143,7 @@ class APISignup(APIView):
 
     def post(self, request):
         if request.data.get("username") and User.objects.filter(
-            username=request.data.get("username")
+                username=request.data.get("username")
         ).exists():
             user = User.objects.get(username=request.data.get("username"))
 
@@ -124,10 +154,9 @@ class APISignup(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST)
 
-            email_body = (
-                f'Доброе время суток, {user.username}.'
-                f'\nКод подтверждения для доступа к API: '
-                f'{user.confirmation_code}'
+            email_body = EMAIL_BODY_TEMPLATE.format(
+                username=user.username,
+                confirmation_code=user.confirmation_code
             )
             data = {
                 'email_body': email_body,
@@ -142,9 +171,9 @@ class APISignup(APIView):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        email_body = (
-            f'Доброе время суток, {user.username}.'
-            f'\nКод подтверждения для доступа к API: {user.confirmation_code}'
+        email_body = EMAIL_BODY_TEMPLATE.format(
+            username=user.username,
+            confirmation_code=user.confirmation_code
         )
         data = {
             'email_body': email_body,
@@ -203,6 +232,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     """Получить комментарий. Права доступа: Доступно без токена."""
+
     serializer_class = serializers.CommentSerializer
     permission_classes = (permissions.AuthorModerAdmin,)
 
