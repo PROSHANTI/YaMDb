@@ -68,6 +68,12 @@ class TitleWriteSerializer(TitleSerializer):
         many=True,
     )
 
+    def to_representation(self, instance):
+        if self.context['request'].method == 'GET':
+            serializer = TitleWriteSerializer(instance)
+            return serializer.data
+        return super().to_representation(instance)
+
 
 class GetTokenSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
