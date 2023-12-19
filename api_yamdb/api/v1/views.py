@@ -54,11 +54,11 @@ class UsersViewSet(
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         if not request.user.is_admin:
-            return Response(status = status.HTTP_403_FORBIDDEN)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = UsersSerializer(
             instance,
-            data = request.data,
-            partial = True
+            data=request.data,
+            partial=True
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -76,12 +76,12 @@ class UsersViewSet(
         if request.method == 'PATCH':
             serializer = serializer_cls(
                 request.user,
-                data = request.data,
-                partial = True
+                data=request.data,
+                partial=True
             )
-            serializer.is_valid(raise_exception = True)
+            serializer.is_valid(raise_exception=True)
             serializer.save()
-            return Response(serializer.data, status = status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         serializer = serializer_cls(request.user)
         return Response(serializer.data)
 
