@@ -68,6 +68,9 @@ class TitleWriteSerializer(TitleSerializer):
     )
 
     def to_representation(self, instance):
+        if self.context['request'].method == 'GET':
+            serializer = TitleGetSerializer(instance)
+            return serializer.data
         return super().to_representation(instance)
 
 
