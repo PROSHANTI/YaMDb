@@ -53,15 +53,13 @@ class UsersViewSet(
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-        if request.user.is_admin:
-            serializer = UsersSerializer(
-                instance,
-                data=request.data,
-                partial=True
-            )
-        else:
+        if not request.user.is_admin:
             return Response(status=status.HTTP_403_FORBIDDEN)
-
+        serializer = UsersSerializer(
+            instance,
+            data=request.data,
+            partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -72,21 +70,19 @@ class UsersViewSet(
         permission_classes=(IsAuthenticated,),
         url_path='me')
     def get_current_user_info(self, request):
-        serializer = UsersSerializer(request.user)
+        serializer_cls = (
+            UsersSerializer if request.user.is_admin else NotAdminSerializer
+        )
         if request.method == 'PATCH':
-            if request.user.is_admin:
-                serializer = UsersSerializer(
-                    request.user,
-                    data=request.data,
-                    partial=True)
-            else:
-                serializer = NotAdminSerializer(
-                    request.user,
-                    data=request.data,
-                    partial=True)
+            serializer = serializer_cls(
+                request.user,
+                data=request.data,
+                partial=True
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = serializer_cls(request.user)
         return Response(serializer.data)
 
 
@@ -186,7 +182,9 @@ class APISignup(APIView):
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Получить список всех объектов. Права доступа: Доступно без токена."""
-    queryset = Title.objects.all().annotate(rating=Avg('reviews__score'))
+    queryset = Title.objects.select_related(
+        'category'
+    ).all().annotate(rating=Avg('reviews__score'))
     permission_classes = (permissions.IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
@@ -216,6 +214,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     """Получить список всех отзывов. Права доступа: Доступно без токена."""
     serializer_class = ReviewSerializer
     permission_classes = (permissions.AuthorModerAdmin,)
+    http_method_names = ['get', 'post', 'head', 'delete', 'patch']
 
     def get_object_title(self):
         return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -235,6 +234,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     serializer_class = serializers.CommentSerializer
     permission_classes = (permissions.AuthorModerAdmin,)
+    http_method_names = ['get', 'post', 'head', 'delete', 'patch']
 
     def get_object_review(self):
         return get_object_or_404(

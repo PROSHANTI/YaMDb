@@ -115,6 +115,7 @@ class DefaultModel(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -122,7 +123,7 @@ class DefaultModel(models.Model):
 
 class Genre(DefaultModel):
 
-    class Meta:
+    class Meta(DefaultModel.Meta):
         verbose_name = "Жанр"
         verbose_name_plural = "Жанры"
         default_related_name = "genres"
@@ -130,7 +131,7 @@ class Genre(DefaultModel):
 
 class Category(DefaultModel):
 
-    class Meta:
+    class Meta(DefaultModel.Meta):
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
         default_related_name = "categories"
