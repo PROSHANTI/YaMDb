@@ -42,7 +42,7 @@ class TitleSerializer(ModelSerializer):
 
 
 class TitleGetSerializer(TitleSerializer):
-    rating = serializers.IntegerField()
+    rating = serializers.IntegerField(read_only=True, default=None)
     category = CategorySerializer()
     genre = GenreSerializer(many=True)
 
@@ -68,10 +68,8 @@ class TitleWriteSerializer(TitleSerializer):
     )
 
     def to_representation(self, instance):
-        if self.context['request'].method == 'GET':
-            serializer = TitleGetSerializer(instance)
-            return serializer.data
-        return super().to_representation(instance)
+        serializer = TitleGetSerializer(instance)
+        return serializer.data
 
 
 class GetTokenSerializer(ModelSerializer):
